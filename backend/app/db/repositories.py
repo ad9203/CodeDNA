@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.models import (
     MemoryAudit,
@@ -162,6 +163,16 @@ class ReviewRunRepo:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def get_with_repository(session: AsyncSession, review_run_id: str) -> ReviewRun | None:
+        stmt = (
+            select(ReviewRun)
+            .options(selectinload(ReviewRun.pull_request).selectinload(PullRequest.repository))
+            .where(ReviewRun.id == review_run_id)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @staticmethod
     async def get_by_delivery_id(session: AsyncSession, delivery_id: str) -> ReviewRun | None:
         stmt = select(ReviewRun).where(ReviewRun.delivery_id == delivery_id)
         result = await session.execute(stmt)
@@ -233,6 +244,12 @@ class ReviewFindingRepo:
         stmt = select(ReviewFinding).where(ReviewFinding.review_run_id == review_run_id)
         result = await session.execute(stmt)
         return result.scalars().all()
+
+    @staticmethod
+    async def get_by_id(session: AsyncSession, finding_id: str) -> ReviewFinding | None:
+        stmt = select(ReviewFinding).where(ReviewFinding.id == finding_id)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
 
     @staticmethod
     async def update_feedback_status(
