@@ -124,7 +124,37 @@
   - Zero raw secrets or full diff payloads emitted in logs
 - **Known Non-Blocking Limitations**:
   - Ingestion enqueues review run record in DB; downstream diff fetching and model generation begins in Module 04/08
-- **Next Module**: Module 04 — GitHub Integration & Diff Extraction
+
+## Module 04 — GitHub Integration & Diff Extraction
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/schemas/diff.py`
+  - `backend/app/integrations/github_auth.py`
+  - `backend/app/integrations/github_client.py`
+  - `backend/app/services/diff_service.py`
+  - `backend/tests/unit/test_diff_service.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (37 passed in 1.76s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 25 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit & Integration tests: 37 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - PyGithub client cleanly abstracted behind `BaseGitHubClient` interface
+  - `MockGitHubClient` implemented for offline and deterministic testing
+  - Diff sanitization eliminates path traversal attacks (`../`, absolute paths, Windows drive letters)
+  - Binary files filtered out and tracked in metadata
+  - Hunk parsing accurately records target line numbers for inline comment validation
+  - Character bounding enforces partial review warning when changes exceed threshold
+  - Zero secrets or internal GitHub tokens exposed
+- **Known Non-Blocking Limitations**:
+  - Full GitHub App RS256 token exchange reserved for enterprise mode
+- **Next Module**: Module 05 — Hindsight Memory Layer
+
 
 
 
