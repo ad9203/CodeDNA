@@ -153,7 +153,35 @@
   - Zero secrets or internal GitHub tokens exposed
 - **Known Non-Blocking Limitations**:
   - Full GitHub App RS256 token exchange reserved for enterprise mode
-- **Next Module**: Module 05 — Hindsight Memory Layer
+
+## Module 05 — Hindsight Memory Layer
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/schemas/memory.py`
+  - `backend/app/integrations/hindsight_client.py`
+  - `backend/app/services/memory_service.py`
+  - `backend/tests/unit/test_memory_service.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (44 passed in 1.94s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 28 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit & Integration tests: 44 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - Official `hindsight-client` Python SDK integrated with async methods (`aretain`, `arecall`, `aget_bank_config`)
+  - Strict tenant and repository isolation via partitioned bank IDs: `codedna:{owner}:{repo}`
+  - Deterministic recall query generation incorporating file paths, architectural hints, and PR summaries
+  - Bleach-based HTML tag stripping on all memory text to prevent XSS in downstream rendering
+  - Tenacity exponential backoff retries on transient network errors
+  - Graceful degradation to stateless review on permanent Hindsight timeout or outage without crashing
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 06 — Groq Review Engine & Structured Output
+
 
 
 
