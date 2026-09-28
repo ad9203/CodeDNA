@@ -11,6 +11,7 @@ class WebhookUser(BaseModel):
     login: str
     id: int | None = None
     html_url: str | None = None
+    type: str | None = None
 
 
 class WebhookRepository(BaseModel):

@@ -163,3 +163,50 @@ async def test_retain_review_learning_and_incident_context(mock_hindsight: MockH
     call_inc = mock_hindsight.calls_retain[1]
     assert "incident" in call_inc["tags"]
     assert "INC-99" in call_inc["tags"]
+
+
+@pytest.mark.asyncio
+async def test_official_hindsight_client_aclose_lifecycle():
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.integrations.hindsight_client import OfficialHindsightClient
+
+    client = OfficialHindsightClient(base_url="https://api.hindsight.test", api_key="test-key")
+    mock_sdk = MagicMock()
+    mock_sdk.aclose = AsyncMock()
+    mock_sdk.close = MagicMock()
+    client._client = mock_sdk
+
+    # Async context manager cleans up
+    async with client:
+        assert client._client is mock_sdk
+
+    mock_sdk.aclose.assert_awaited_once()
+    assert client._client is None
+
+    # Idempotent aclose on already closed client
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_service_aclose_propagation():
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.services.learning_service import LearningService
+    from app.services.memory_service import MemoryService
+    from app.services.orchestration_service import OrchestrationService
+
+    mock_client = MagicMock()
+    mock_client.aclose = AsyncMock()
+
+    mem_service = MemoryService(client=mock_client)
+    await mem_service.aclose()
+    mock_client.aclose.assert_awaited_once()
+
+    learning_service = LearningService(memory_service=mem_service)
+    await learning_service.aclose()
+    assert mock_client.aclose.await_count == 2
+
+    orchestration_service = OrchestrationService(hindsight_client=mock_client)
+    await orchestration_service.aclose()
+    assert mock_client.aclose.await_count == 3

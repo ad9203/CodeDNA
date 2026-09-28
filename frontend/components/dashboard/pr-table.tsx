@@ -240,7 +240,7 @@ export function PRTable({
                     {r.memory_recalled_count > 0 ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-950/60 border border-purple-800/80 text-purple-300 font-mono font-medium">
                         <Brain className="w-3 h-3 text-purple-400" />
-                        {r.memory_recalled_count} rules applied
+                        {r.memory_recalled_count} {r.memory_recalled_count === 1 ? "memory recalled" : "memories recalled"}
                       </span>
                     ) : (
                       <span className="text-slate-500 font-mono italic">None</span>

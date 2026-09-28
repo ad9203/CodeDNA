@@ -6,20 +6,42 @@ import hmac
 import pytest
 from httpx import AsyncClient
 from pydantic import AnyHttpUrl, SecretStr, ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
+from app.api.deps import get_db
 from app.core.config import Settings, settings
 from app.core.security import verify_github_signature
 from app.db.base import Base
-from app.db.session import engine
+from app.main import app
 
 
 @pytest.fixture(autouse=True)
 async def setup_test_db():
-    async with engine.begin() as conn:
+    test_engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(
+        bind=test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+
+    async def override_get_db():
+        async with session_maker() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
     yield
-    async with engine.begin() as conn:
+    app.dependency_overrides.clear()
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    await test_engine.dispose()
 
 
 def test_production_cors_wildcard_rejection():

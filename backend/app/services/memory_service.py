@@ -21,6 +21,17 @@ class MemoryService:
     def __init__(self, client: BaseHindsightClient | None = None):
         self.client = client or OfficialHindsightClient()
 
+    async def aclose(self) -> None:
+        """Closes the underlying Hindsight client if managed."""
+        if hasattr(self.client, "aclose"):
+            await self.client.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.aclose()
+
     @staticmethod
     def get_bank_id(owner: str, repo: str, tenant_id: str | None = None) -> str:
         """Computes isolated bank identifier for the given repository.

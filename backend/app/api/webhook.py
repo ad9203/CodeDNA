@@ -31,10 +31,35 @@ from app.schemas.github import (
     WebhookPullRequestReviewEvent,
     WebhookReviewCommentEvent,
 )
-from app.workers.tasks import run_review_orchestration_task
+from app.workers.tasks import (
+    run_comment_learning_task,
+    run_review_orchestration_task,
+)
 
 logger = get_logger("app.api.webhook")
 router = APIRouter(prefix="/webhook", tags=["Webhook"])
+
+
+def is_bot_comment(actor_login: str, user_type: str | None = None, comment_body: str = "") -> bool:
+    """Detects if a comment originated from a bot or CodeDNA to prevent feedback loops."""
+    login_lower = actor_login.lower().strip()
+    if user_type and user_type.lower() == "bot":
+        return True
+    if "[bot]" in login_lower or login_lower.endswith("-bot") or login_lower == "github-actions":
+        return True
+    if login_lower in ("codedna", "codedna-bot", "codedna[bot]"):
+        return True
+    configured_bot = getattr(settings, "github_bot_login", None)
+    if configured_bot and login_lower == configured_bot.lower().strip():
+        return True
+    stripped_body = comment_body.strip()
+    if "## CodeDNA Review" in stripped_body or "<!-- codedna-review -->" in stripped_body:
+        return True
+    if stripped_body.startswith(
+        ("**[INFO]", "**[WARNING]", "**[CRITICAL]", "**[HIGH]", "**[MEDIUM]", "**[LOW]")
+    ):
+        return True
+    return False
 
 
 @router.post(
@@ -256,7 +281,7 @@ async def handle_github_webhook(
     if event_name == "pull_request_review_comment":
         if action in {"created", "edited", "deleted"}:
             try:
-                WebhookReviewCommentEvent.model_validate(payload)
+                review_comment_event = WebhookReviewCommentEvent.model_validate(payload)
             except ValidationError as ve:
                 logger.error("webhook_review_comment_validation_failed", error=str(ve))
                 await WebhookDeliveryRepo.update_status(session, delivery_id, "failed")
@@ -265,6 +290,40 @@ async def handle_github_webhook(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Invalid review comment payload",
                 ) from ve
+
+            if action == "created":
+                actor = review_comment_event.comment.user.login
+                user_type = getattr(review_comment_event.comment.user, "type", None)
+                body = review_comment_event.comment.body
+                repo_owner = review_comment_event.repository.owner_login
+                repo_name = review_comment_event.repository.name
+                pr_num = review_comment_event.pull_request.number
+
+                if is_bot_comment(actor, user_type, body):
+                    logger.info(
+                        "webhook_review_comment_bot_ignored",
+                        actor=actor,
+                        repo=f"{repo_owner}/{repo_name}",
+                        pr=pr_num,
+                    )
+                    await WebhookDeliveryRepo.update_status(session, delivery_id, "ignored")
+                    await session.commit()
+                    return WebhookIntakeResponse(
+                        delivery_id=delivery_id,
+                        event=event_name,
+                        action=action,
+                        status="ignored",
+                        message=f"Bot comment from '{actor}' ignored to prevent feedback loops",
+                    )
+
+                background_tasks.add_task(
+                    run_comment_learning_task,
+                    owner=repo_owner,
+                    repo=repo_name,
+                    comment_body=body,
+                    actor_login=actor,
+                    pr_number=pr_num,
+                )
 
             await WebhookDeliveryRepo.update_status(session, delivery_id, "enqueued")
             await session.commit()
@@ -301,6 +360,39 @@ async def handle_github_webhook(
                 ) from ve
 
             if issue_event.issue.pull_request is not None:
+                actor = issue_event.comment.user.login
+                user_type = getattr(issue_event.comment.user, "type", None)
+                body = issue_event.comment.body
+                repo_owner = issue_event.repository.owner_login
+                repo_name = issue_event.repository.name
+                pr_num = issue_event.issue.number
+
+                if is_bot_comment(actor, user_type, body):
+                    logger.info(
+                        "webhook_issue_comment_bot_ignored",
+                        actor=actor,
+                        repo=f"{repo_owner}/{repo_name}",
+                        pr=pr_num,
+                    )
+                    await WebhookDeliveryRepo.update_status(session, delivery_id, "ignored")
+                    await session.commit()
+                    return WebhookIntakeResponse(
+                        delivery_id=delivery_id,
+                        event=event_name,
+                        action=action,
+                        status="ignored",
+                        message=f"Bot comment from '{actor}' ignored to prevent feedback loops",
+                    )
+
+                background_tasks.add_task(
+                    run_comment_learning_task,
+                    owner=repo_owner,
+                    repo=repo_name,
+                    comment_body=body,
+                    actor_login=actor,
+                    pr_number=pr_num,
+                )
+
                 await WebhookDeliveryRepo.update_status(session, delivery_id, "enqueued")
                 await session.commit()
                 return WebhookIntakeResponse(

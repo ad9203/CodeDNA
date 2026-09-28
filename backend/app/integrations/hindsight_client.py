@@ -49,6 +49,11 @@ class BaseHindsightClient(ABC):
     async def healthcheck(self, bank_id: str | None = None) -> bool:
         pass
 
+    @abstractmethod
+    async def aclose(self) -> None:
+        """Cleanly releases underlying HTTP sessions/connectors."""
+        pass
+
 
 class OfficialHindsightClient(BaseHindsightClient):
     """Production client wrapping the official hindsight-client SDK with tenacity retries."""
@@ -73,6 +78,39 @@ class OfficialHindsightClient(BaseHindsightClient):
                 api_key=self.api_key,
             )
         return self._client
+
+    async def aclose(self) -> None:
+        """Closes the underlying Hindsight SDK API client session and connectors."""
+        if self._client:
+            client = self._client
+            self._client = None
+            try:
+                await client.aclose()
+            except Exception as e:
+                logger.warning("hindsight_client_aclose_error", error=str(e))
+
+    def close(self) -> None:
+        """Synchronously closes the underlying Hindsight SDK API client session."""
+        if self._client:
+            client = self._client
+            self._client = None
+            try:
+                client.close()
+            except Exception as e:
+                logger.warning("hindsight_client_close_error", error=str(e))
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.aclose()
+
+    def __del__(self) -> None:
+        if getattr(self, "_client", None) is not None:
+            try:
+                self.close()
+            except Exception:
+                pass
 
     @retry(
         retry=retry_if_exception_type((TimeoutError, ConnectionError)),
@@ -277,3 +315,7 @@ class MockHindsightClient(BaseHindsightClient):
 
     async def healthcheck(self, bank_id: str | None = None) -> bool:
         return not self.should_fail
+
+    async def aclose(self) -> None:
+        """Mock client release hook."""
+        pass

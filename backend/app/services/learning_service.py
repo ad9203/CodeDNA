@@ -13,6 +13,17 @@ class LearningService:
     def __init__(self, memory_service: MemoryService | None = None):
         self.memory_service = memory_service or MemoryService()
 
+    async def aclose(self) -> None:
+        """Closes the underlying memory service and HTTP sessions."""
+        if hasattr(self.memory_service, "aclose"):
+            await self.memory_service.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.aclose()
+
     async def process_feedback_outcome(
         self,
         owner: str,

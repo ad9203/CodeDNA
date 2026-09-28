@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     # Publishing controls
     max_inline_comments: int = 15
     request_changes_on_critical: bool = False
+    github_bot_login: str = "codedna[bot]"
 
     # Security limits
     max_pr_files: int = 100

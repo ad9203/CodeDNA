@@ -43,6 +43,17 @@ class OrchestrationService:
         self.publishing_service = PublishingService(client=self.github_client)
         self.learning_service = LearningService(memory_service=self.memory_service)
 
+    async def aclose(self) -> None:
+        """Closes underlying memory and service resources."""
+        if hasattr(self.memory_service, "aclose"):
+            await self.memory_service.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.aclose()
+
     async def process_pull_request_review(
         self,
         session: AsyncSession,

@@ -66,15 +66,17 @@ async def submit_finding_feedback(
     owner = review_run.pull_request.repository.owner
     repo = review_run.pull_request.repository.name
     learning_service = LearningService()
-
-    retained = await learning_service.process_feedback_outcome(
-        owner=owner,
-        repo=repo,
-        finding=finding,
-        outcome=payload.outcome,
-        feedback_text=payload.feedback_text,
-        actor_login=payload.actor_login,
-    )
+    try:
+        retained = await learning_service.process_feedback_outcome(
+            owner=owner,
+            repo=repo,
+            finding=finding,
+            outcome=payload.outcome,
+            feedback_text=payload.feedback_text,
+            actor_login=payload.actor_login,
+        )
+    finally:
+        await learning_service.aclose()
 
     await session.commit()
 
@@ -136,15 +138,17 @@ async def submit_general_review_feedback(
     owner = review_run.pull_request.repository.owner
     repo = review_run.pull_request.repository.name
     learning_service = LearningService()
-
-    retained = await learning_service.process_feedback_outcome(
-        owner=owner,
-        repo=repo,
-        finding=None,
-        outcome=payload.outcome,
-        feedback_text=payload.feedback_text,
-        actor_login=payload.actor_login,
-    )
+    try:
+        retained = await learning_service.process_feedback_outcome(
+            owner=owner,
+            repo=repo,
+            finding=None,
+            outcome=payload.outcome,
+            feedback_text=payload.feedback_text,
+            actor_login=payload.actor_login,
+        )
+    finally:
+        await learning_service.aclose()
 
     await session.commit()
 

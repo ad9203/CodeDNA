@@ -9,6 +9,7 @@ interface Props {
 export function StatsCards({ stats }: Props) {
   const criticalCount = stats.findings_by_severity?.critical || 0;
   const highCount = stats.findings_by_severity?.high || 0;
+  const totalFeedback = stats.feedback_metrics?.total ?? 0;
   const acceptanceRate = stats.feedback_metrics?.acceptance_rate ?? 0;
   const acceptedTotal = stats.feedback_metrics?.by_outcome?.accepted ?? 0;
 
@@ -83,12 +84,14 @@ export function StatsCards({ stats }: Props) {
         </div>
         <div className="flex items-baseline gap-2">
           <div className="text-2xl font-bold text-emerald-400 font-mono">
-            {acceptanceRate > 0 ? `${acceptanceRate}%` : "100%"}
+            {totalFeedback > 0 ? `${acceptanceRate}%` : "—"}
           </div>
           <span className="text-xs text-slate-500 font-mono">accepted</span>
         </div>
         <div className="mt-2 text-xs text-slate-400 flex items-center justify-between">
-          <span>{acceptedTotal} accepted suggestions</span>
+          <span>
+            {totalFeedback > 0 ? `${acceptedTotal} accepted suggestions` : "No feedback recorded"}
+          </span>
           {stats.avg_duration_ms && (
             <span className="text-slate-500 font-mono text-[11px]">
               ~{Math.round(stats.avg_duration_ms)}ms/rev
