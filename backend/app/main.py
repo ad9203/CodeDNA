@@ -8,7 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
 from app.core.config import settings
-from app.core.logging import configure_logging, get_logger
+from app.core.logging import (
+    clear_trace_context,
+    configure_logging,
+    get_logger,
+    set_trace_context,
+)
 
 configure_logging(settings.log_level)
 logger = get_logger("app.main")
@@ -45,10 +50,21 @@ app.add_middleware(
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    delivery_id = request.headers.get("X-GitHub-Delivery")
     request.state.request_id = request_id
-    response = await call_next(request)
-    response.headers["X-Request-ID"] = request_id
-    return response
+    if delivery_id:
+        request.state.delivery_id = delivery_id
+
+    set_trace_context(request_id=request_id, delivery_id=delivery_id)
+
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        if delivery_id:
+            response.headers["X-GitHub-Delivery"] = delivery_id
+        return response
+    finally:
+        clear_trace_context()
 
 
 # Include routers

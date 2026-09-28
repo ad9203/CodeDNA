@@ -29,5 +29,33 @@
   - Dark-mode SaaS UI baseline initialized with Next.js 14 App Router
   - Python 3.11.9 runtime and dependencies locked
 - **Known Non-Blocking Limitations**:
-  - Live external services (GitHub/Hindsight/Groq) credentials not yet required for Module 00
-- **Next Module**: Module 01 — Configuration, Health, Structured Logging
+  - Live external services credentials not yet required for Module 00
+
+## Module 01 — Configuration, Health, Structured Logging
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/core/config.py`
+  - `backend/app/core/logging.py`
+  - `backend/app/main.py`
+  - `backend/tests/unit/test_config.py`
+  - `backend/tests/unit/test_logging.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (11 passed in 0.04s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 8 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit tests: 11 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - Production fail-fast validation for secrets implemented via Pydantic model validator
+  - SecretStr masks credentials from `repr()` and string output
+  - Structlog processor redacts sensitive keys and bounds oversized diffs
+  - Contextvars correlation middleware binds `X-Request-ID` and `X-GitHub-Delivery`
+  - Health liveness and readiness endpoints return structured JSON
+- **Known Non-Blocking Limitations**:
+  - Readiness probe does not yet check database connectivity (scheduled for Module 02)
+- **Next Module**: Module 02 — Persistence & Review Lifecycle
+
