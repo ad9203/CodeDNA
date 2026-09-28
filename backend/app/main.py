@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
+from app.api.webhook import router as webhook_router
 from app.core.config import settings
 from app.core.logging import (
     clear_trace_context,
@@ -69,3 +70,4 @@ async def correlation_id_middleware(request: Request, call_next):
 
 # Include routers
 app.include_router(health_router)
+app.include_router(webhook_router, prefix=settings.api_v1_prefix)

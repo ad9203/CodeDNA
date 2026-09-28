@@ -94,6 +94,37 @@
   - Greenlet dependency locked for async SQLAlchemy operations
 - **Known Non-Blocking Limitations**:
   - None
-- **Next Module**: Module 03 — GitHub Webhook Security & Event Intake
+
+## Module 03 — GitHub Webhook Security & Event Intake
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/core/security.py`
+  - `backend/app/schemas/common.py`
+  - `backend/app/schemas/github.py`
+  - `backend/app/api/deps.py`
+  - `backend/app/api/webhook.py`
+  - `backend/app/main.py`
+  - `backend/tests/fixtures/webhook_fixtures.py`
+  - `backend/tests/unit/test_webhook.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (30 passed in 1.52s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 20 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit & Integration tests: 30 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - Constant-time HMAC-SHA256 signature verification over raw request body before parsing
+  - Full event intake lifecycle for `opened`, `synchronize`, `submitted` reviews, and PR comments
+  - Strict deduplication of delivery IDs to prevent replay attacks and duplicate runs
+  - Unsupported actions safely filtered and logged without error traces
+  - Zero raw secrets or full diff payloads emitted in logs
+- **Known Non-Blocking Limitations**:
+  - Ingestion enqueues review run record in DB; downstream diff fetching and model generation begins in Module 04/08
+- **Next Module**: Module 04 — GitHub Integration & Diff Extraction
+
 
 
