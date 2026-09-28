@@ -335,6 +335,38 @@
   - None
 - **Next Module**: Module 11 — Backend Dashboard Read APIs
 
+## Module 11 — Backend Dashboard Read APIs
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/schemas/dashboard.py`
+  - `backend/app/api/dashboard.py`
+  - `backend/app/db/repositories.py`
+  - `backend/app/main.py`
+  - `backend/tests/unit/test_dashboard_api.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (86 passed in 2.52s)
+  - `ruff check app tests` (All checks passed)
+  - `ruff format app tests` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 44 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+  - `npm run lint` (Passed, 0 warnings/errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit, Security & Integration tests: 86 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - Monitored repositories read API (`GET /api/repositories`) returns aggregated PR count, review run count, and last active timestamp
+  - Filtered and paginated review runs read API (`GET /api/reviews`) supports filtering by `repository_id` and `status` with total count metadata
+  - Deep review run detail API (`GET /api/reviews/{id}`) returns repository metadata, pull request details, findings array, recalled memories audit array, and feedback count
+  - Dedicated findings endpoint (`GET /api/reviews/{id}/findings`) and memory audit endpoint (`GET /api/reviews/{id}/memory`) return granular inspection data
+  - Overview statistics endpoint (`GET /api/stats/overview`) aggregates repository counts, total review runs, findings by severity breakdown, feedback acceptance metrics, and average review duration ms
+  - Zero secrets exposed in responses or logs
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 12 & 13 — Premium Frontend Foundation & Live PR Table / Memory Audit UI
+
+
 
 
 

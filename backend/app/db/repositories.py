@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -51,6 +51,38 @@ class RepositoryRepo:
         stmt = select(Repository).order_by(Repository.full_name)
         result = await session.execute(stmt)
         return result.scalars().all()
+
+    @staticmethod
+    async def list_with_metrics(session: AsyncSession) -> list[dict[str, Any]]:
+        stmt = (
+            select(
+                Repository,
+                func.count(func.distinct(PullRequest.id)).label("pr_count"),
+                func.count(func.distinct(ReviewRun.id)).label("review_count"),
+                func.max(ReviewRun.started_at).label("last_active_at"),
+            )
+            .outerjoin(PullRequest, PullRequest.repository_id == Repository.id)
+            .outerjoin(ReviewRun, ReviewRun.pull_request_id == PullRequest.id)
+            .group_by(Repository.id)
+            .order_by(Repository.full_name)
+        )
+        result = await session.execute(stmt)
+        items: list[dict[str, Any]] = []
+        for repo, pr_count, review_count, last_active in result.all():
+            items.append(
+                {
+                    "id": repo.id,
+                    "owner": repo.owner,
+                    "name": repo.name,
+                    "full_name": repo.full_name,
+                    "default_branch": repo.default_branch,
+                    "pr_count": pr_count,
+                    "review_count": review_count,
+                    "created_at": repo.created_at,
+                    "last_active_at": last_active or repo.created_at,
+                }
+            )
+        return items
 
 
 class PullRequestRepo:
@@ -185,6 +217,59 @@ class ReviewRunRepo:
         stmt = select(ReviewRun).order_by(desc(ReviewRun.started_at)).limit(limit).offset(offset)
         result = await session.execute(stmt)
         return result.scalars().all()
+
+    @staticmethod
+    async def list_filtered(
+        session: AsyncSession,
+        repository_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Sequence[ReviewRun]:
+        stmt = (
+            select(ReviewRun)
+            .join(PullRequest, ReviewRun.pull_request_id == PullRequest.id)
+            .options(selectinload(ReviewRun.pull_request).selectinload(PullRequest.repository))
+        )
+        if repository_id:
+            stmt = stmt.where(PullRequest.repository_id == repository_id)
+        if status:
+            stmt = stmt.where(ReviewRun.status == status)
+
+        stmt = stmt.order_by(desc(ReviewRun.started_at)).limit(limit).offset(offset)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @staticmethod
+    async def count_filtered(
+        session: AsyncSession,
+        repository_id: str | None = None,
+        status: str | None = None,
+    ) -> int:
+        stmt = select(func.count(ReviewRun.id)).join(
+            PullRequest, ReviewRun.pull_request_id == PullRequest.id
+        )
+        if repository_id:
+            stmt = stmt.where(PullRequest.repository_id == repository_id)
+        if status:
+            stmt = stmt.where(ReviewRun.status == status)
+        result = await session.execute(stmt)
+        return result.scalar() or 0
+
+    @staticmethod
+    async def get_detailed_by_id(session: AsyncSession, review_run_id: str) -> ReviewRun | None:
+        stmt = (
+            select(ReviewRun)
+            .options(
+                selectinload(ReviewRun.pull_request).selectinload(PullRequest.repository),
+                selectinload(ReviewRun.findings),
+                selectinload(ReviewRun.memory_audits),
+                selectinload(ReviewRun.feedback),
+            )
+            .where(ReviewRun.id == review_run_id)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
 
     @staticmethod
     async def complete_run(
@@ -337,3 +422,59 @@ class ReviewFeedbackRepo:
         )
         result = await session.execute(stmt)
         return result.scalars().all()
+
+
+class DashboardStatsRepo:
+    @staticmethod
+    async def get_overview_stats(session: AsyncSession) -> dict[str, Any]:
+        # 1. Total repos
+        repo_count_res = await session.execute(select(func.count(Repository.id)))
+        total_repos = repo_count_res.scalar() or 0
+
+        # 2. Total reviews & duration & memories
+        review_stats_res = await session.execute(
+            select(
+                func.count(ReviewRun.id),
+                func.avg(ReviewRun.total_duration_ms),
+                func.sum(ReviewRun.memory_recalled_count),
+            )
+        )
+        total_reviews, avg_duration, total_memories = review_stats_res.one()
+        total_reviews = total_reviews or 0
+        total_memories = int(total_memories or 0)
+
+        # 3. Findings total & breakdown by severity
+        findings_count_res = await session.execute(
+            select(ReviewFinding.severity, func.count(ReviewFinding.id)).group_by(
+                ReviewFinding.severity
+            )
+        )
+        findings_by_sev = {str(sev): int(count) for sev, count in findings_count_res.all()}
+        total_findings = sum(findings_by_sev.values())
+
+        # 4. Feedback metrics
+        feedback_res = await session.execute(
+            select(ReviewFeedback.outcome, func.count(ReviewFeedback.id)).group_by(
+                ReviewFeedback.outcome
+            )
+        )
+        feedback_by_outcome = {str(outcome): int(count) for outcome, count in feedback_res.all()}
+        total_feedback = sum(feedback_by_outcome.values())
+        accepted_count = feedback_by_outcome.get("accepted", 0)
+        acceptance_rate = (
+            round((accepted_count / total_feedback) * 100, 1) if total_feedback > 0 else 0.0
+        )
+
+        return {
+            "total_repositories": total_repos,
+            "total_reviews": total_reviews,
+            "total_findings": total_findings,
+            "total_memories_recalled": total_memories,
+            "findings_by_severity": findings_by_sev,
+            "feedback_metrics": {
+                "total": total_feedback,
+                "by_outcome": feedback_by_outcome,
+                "acceptance_rate": acceptance_rate,
+            },
+            "avg_duration_ms": round(float(avg_duration), 1) if avg_duration else None,
+        }
