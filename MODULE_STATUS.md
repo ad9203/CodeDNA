@@ -56,6 +56,44 @@
   - Contextvars correlation middleware binds `X-Request-ID` and `X-GitHub-Delivery`
   - Health liveness and readiness endpoints return structured JSON
 - **Known Non-Blocking Limitations**:
-  - Readiness probe does not yet check database connectivity (scheduled for Module 02)
-- **Next Module**: Module 02 — Persistence & Review Lifecycle
+  - Readiness probe does not yet check database connectivity (resolved in Module 02)
+
+## Module 02 — Persistence & Review Lifecycle
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/db/base.py`
+  - `backend/app/db/session.py`
+  - `backend/app/db/models.py`
+  - `backend/app/db/repositories.py`
+  - `backend/app/db/init_db.py`
+  - `backend/app/api/health.py`
+  - `backend/alembic.ini`
+  - `backend/alembic/env.py`
+  - `backend/alembic/script.py.mako`
+  - `backend/alembic/versions/5732b452c03b_create_review_lifecycle_tables.py`
+  - `backend/tests/unit/test_persistence.py`
+  - `backend/requirements.txt`
+- **Commands Run**:
+  - `pip install greenlet>=3.0.0`
+  - `alembic revision --autogenerate -m "create review lifecycle tables"`
+  - `alembic upgrade head`
+  - `pytest backend/tests -v` (17 passed in 0.30s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 14 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit & Integration tests: 17 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - All 7 core relational tables created with indexes, unique constraints, and foreign key cascades
+  - Clean repository abstraction layer isolating raw SQL/ORM from business logic
+  - Webhook delivery deduplication and idempotency verified
+  - Readiness endpoint dynamically tests database connectivity
+  - Greenlet dependency locked for async SQLAlchemy operations
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 03 — GitHub Webhook Security & Event Intake
+
 
