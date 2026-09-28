@@ -279,3 +279,16 @@ async def get_overview_statistics(
     set_trace_context(stage="stats_overview")
     stats = await DashboardStatsRepo.get_overview_stats(session)
     return DashboardOverviewStats(**stats)
+
+
+@router.post(
+    "/demo/evaluate",
+    status_code=status.HTTP_200_OK,
+)
+async def run_demo_evaluation() -> dict:
+    """Executes the memory evaluation harness across Scenarios A, B, and C."""
+    from app.evaluation.runner import MemoryEvaluationRunner
+
+    runner = MemoryEvaluationRunner()
+    results = await runner.run_full_evaluation()
+    return results

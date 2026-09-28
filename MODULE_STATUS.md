@@ -405,6 +405,45 @@
   - None
 - **Next Module**: Module 14 — Deterministic Demo Mode & Memory Evaluation Harness
 
+## Module 14 — Deterministic Demo Mode & Memory Evaluation Harness
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/evaluation/__init__.py`
+  - `backend/app/evaluation/fixtures.py`
+  - `backend/app/evaluation/runner.py`
+  - `backend/app/api/dashboard.py`
+  - `backend/tests/unit/test_evaluation_harness.py`
+  - `scripts/run_memory_evaluation.py`
+  - `docs/memory-evaluation.md`
+- **Commands Run**:
+  - `python scripts/run_memory_evaluation.py` (Report generated at `docs/memory-evaluation.md`)
+  - `pytest backend/tests -v` (90 passed in 2.56s)
+  - `ruff check app tests` (All checks passed)
+  - `ruff format --check app tests` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 46 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+  - `npm run lint` (Passed, 0 warnings/errors)
+  - `npm run build` (Passed, static pages compiled successfully)
+- **Test Counts & Pass/Fail Status**:
+  - Unit, Security, Integration & Harness tests: 90 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+  - Build status: Frontend and Backend production builds verified
+- **Manual Review Findings**:
+  - Evaluation fixtures represent realistic microservice scenario (`acme-corp/commerce-platform`) with payment checkout and migration PRs
+  - 3 distinct evaluation scenarios systematically executed and benchmarked:
+    - **Scenario A (Stateless baseline)**: 0 memories recalled; fails to catch direct database write violating architectural patterns.
+    - **Scenario B (Hindsight Memory-Aware)**: Recalls persistent team conventions (`codedna:acme-corp:commerce-platform`); flags direct database write as CRITICAL and references repository pattern team rule.
+    - **Scenario C (Feedback Evolution Loop)**: First migration PR flags raw SQL; reviewer marks finding as "rejected" (false positive for migration scripts); negative constraint memory dynamically seeded; subsequent migration PR recalls constraint and suppresses false positive (0 findings).
+  - CLI runner `scripts/run_memory_evaluation.py` outputs formatted markdown evaluation report directly to `docs/memory-evaluation.md` with Windows UTF-8 console compatibility
+  - API endpoint `POST /api/demo/evaluate` exposes automated evaluation trigger for frontend dashboard and CI pipelines
+  - Zero secrets or mock leakage into production paths
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 15 — Production Hardening & Security Audit
+
+
 
 
 
