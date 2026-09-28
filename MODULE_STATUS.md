@@ -180,7 +180,36 @@
   - Graceful degradation to stateless review on permanent Hindsight timeout or outage without crashing
 - **Known Non-Blocking Limitations**:
   - None
-- **Next Module**: Module 06 — Groq Review Engine & Structured Output
+
+## Module 06 — Groq Review Engine & Structured Output
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/schemas/review.py`
+  - `backend/app/integrations/groq_client.py`
+  - `backend/app/services/review_service.py`
+  - `backend/tests/unit/test_review_service.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (51 passed in 1.90s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 31 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit & Integration tests: 51 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - AsyncGroq client cleanly integrated with `response_format={"type": "json_object"}`
+  - Strict Pydantic models with `extra="forbid"` for `ReviewResult` and `ReviewFinding`
+  - Prompt structure guarantees 3-way boundary: System Directives, Untrusted Memory, Untrusted PR Diff
+  - Finding verification cross-references file paths and line numbers against diff hunks
+  - Hallucinated or out-of-hunk line numbers automatically downgraded to general file comments
+  - Tenacity exponential backoff applied for 429 rate limits and 5xx errors; 400/401 errors never blindly retried
+  - Zero secrets or unredacted keys leaked in requests or logs
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 07 — Prompt Injection Defense, Sanitization & Secret Redaction
+
 
 
 
