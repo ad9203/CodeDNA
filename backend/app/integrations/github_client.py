@@ -226,6 +226,8 @@ class MockGitHubClient(BaseGitHubClient):
         self.reviews: dict[str, list[dict[str, Any]]] = {}
         self.comments: dict[str, list[dict[str, Any]]] = {}
         self.should_fail: bool = False
+        self.simulate_422_on_inline: bool = False
+        self.simulate_permission_error: bool = False
 
     def _key(self, owner: str, repo: str, number: int) -> str:
         return f"{owner}/{repo}#{number}"
@@ -290,6 +292,16 @@ class MockGitHubClient(BaseGitHubClient):
     ) -> dict[str, Any]:
         if self.should_fail:
             raise ExternalServiceError("github", "Mock GitHub API unavailable", retryable=True)
+        if self.simulate_permission_error:
+            raise ExternalServiceError(
+                "github", "Resource not accessible by integration (403 Forbidden)", retryable=False
+            )
+        if self.simulate_422_on_inline and comments:
+            raise ExternalServiceError(
+                "github",
+                "Validation Failed (422 Unprocessable Entity): Line number is outside changed hunk",
+                retryable=False,
+            )
         key = self._key(owner, repo, number)
         review_record = {
             "id": 99000 + len(self.reviews.get(key, [])),

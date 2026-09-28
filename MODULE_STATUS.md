@@ -267,8 +267,40 @@
   - GitHub publish failure guarantees generated findings remain preserved in database audit trail
   - FastAPI BackgroundTasks integration enables asynchronous execution from webhook intake
 - **Known Non-Blocking Limitations**:
-  - Live GitHub publishing tested against mock adapter; dedicated live sandbox validation scheduled for Module 09/15
+  - Live GitHub publishing tested against mock adapter; dedicated live sandbox validation scheduled for Module 15
 - **Next Module**: Module 09 — GitHub Review Publishing
+
+## Module 09 — GitHub Review Publishing
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/core/config.py`
+  - `backend/app/integrations/github_client.py`
+  - `backend/app/services/publishing_service.py`
+  - `backend/tests/unit/test_publishing.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (74 passed in 1.84s)
+  - `ruff check app tests` (All checks passed)
+  - `ruff format app tests` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 40 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+  - `npm run lint` (Passed, 0 warnings/errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit, Security & Integration tests: 74 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - Safe inline comment filtering strictly checks file path and diff hunk line boundaries
+  - Automatic fallback on GitHub 422 Unprocessable Entity (e.g. out-of-hunk line numbers or diff mismatch) cleanly republishes without inline comments so review feedback is never lost
+  - Severity-based inline comment prioritization guarantees critical and high severity findings take precedence within the 15-comment budget
+  - Unplaced or budget-exceeded findings remain comprehensively detailed in the immutable top-level review body (Layer C)
+  - Review event safely defaults to `COMMENT`; never automatically submits `APPROVE`
+  - Configurable `request_changes_on_critical` option appropriately submits `REQUEST_CHANGES` when critical findings are present
+  - Zero secrets or sensitive headers exposed
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 10 — Learning Loop: Human Feedback -> Hindsight
+
 
 
 

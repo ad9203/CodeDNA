@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     initial_retry_delay_seconds: float = 0.5
     max_retry_delay_seconds: float = 8.0
 
+    # Publishing controls
+    max_inline_comments: int = 15
+    request_changes_on_critical: bool = False
+
     # Security limits
     max_pr_files: int = 100
     max_diff_chars: int = 150000
