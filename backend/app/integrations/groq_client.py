@@ -60,7 +60,7 @@ class OfficialGroqClient(BaseGroqClient):
         if not self._client:
             from groq import AsyncGroq
 
-            self._client = AsyncGroq(api_key=self.api_key)
+            self._client = AsyncGroq(api_key=self.api_key, timeout=settings.groq_timeout_seconds)
         return self._client
 
     @retry(

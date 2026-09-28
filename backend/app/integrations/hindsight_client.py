@@ -1,5 +1,6 @@
 """Hindsight client integration adapter with retry policies and mock support."""
 
+import asyncio
 import time
 from abc import ABC, abstractmethod
 from typing import Any
@@ -90,12 +91,15 @@ class OfficialHindsightClient(BaseHindsightClient):
         start = time.perf_counter()
         try:
             client = self._get_sdk_client()
-            res = await client.aretain(
-                bank_id=bank_id,
-                content=content,
-                context=context,
-                metadata=metadata,
-                tags=tags,
+            res = await asyncio.wait_for(
+                client.aretain(
+                    bank_id=bank_id,
+                    content=content,
+                    context=context,
+                    metadata=metadata,
+                    tags=tags,
+                ),
+                timeout=settings.hindsight_timeout_seconds,
             )
             duration_ms = int((time.perf_counter() - start) * 1000)
             logger.info("hindsight_retain_success", bank_id=bank_id, duration_ms=duration_ms)
@@ -123,12 +127,15 @@ class OfficialHindsightClient(BaseHindsightClient):
         start = time.perf_counter()
         try:
             client = self._get_sdk_client()
-            res = await client.arecall(
-                bank_id=bank_id,
-                query=query,
-                max_tokens=max_tokens,
-                budget=budget,
-                tags=tags,
+            res = await asyncio.wait_for(
+                client.arecall(
+                    bank_id=bank_id,
+                    query=query,
+                    max_tokens=max_tokens,
+                    budget=budget,
+                    tags=tags,
+                ),
+                timeout=settings.hindsight_timeout_seconds,
             )
             duration_ms = int((time.perf_counter() - start) * 1000)
             recalled_list: list[RecalledMemory] = []

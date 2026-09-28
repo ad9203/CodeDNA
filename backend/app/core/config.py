@@ -47,9 +47,13 @@ class Settings(BaseSettings):
     github_installation_id: str | None = None
 
     # Worker & Retry controls
+    # Worker, Timeout & Retry controls
     max_external_retries: int = 3
     initial_retry_delay_seconds: float = 0.5
     max_retry_delay_seconds: float = 8.0
+    external_timeout_seconds: float = 15.0
+    groq_timeout_seconds: float = 30.0
+    hindsight_timeout_seconds: float = 15.0
 
     # Publishing controls
     max_inline_comments: int = 15
@@ -71,7 +75,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_requirements(self) -> "Settings":
-        """Enforces that required secrets are present in production."""
+        """Enforces that required secrets and safe CORS origins are present in production."""
         if self.environment == "production":
             missing = []
             if not self.github_token:
@@ -87,6 +91,11 @@ class Settings(BaseSettings):
                 raise ValueError(
                     f"Production environment requires the following secret settings: {', '.join(missing)}"
                 )
+
+            # Strict CORS validation: never allow wildcard in production
+            origin_str = str(self.frontend_origin).strip()
+            if "*" in origin_str:
+                raise ValueError("Wildcard CORS origin is strictly prohibited in production.")
         return self
 
 

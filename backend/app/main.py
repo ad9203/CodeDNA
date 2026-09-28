@@ -5,12 +5,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.dashboard import router as dashboard_router
 from app.api.feedback import router as feedback_router
 from app.api.health import router as health_router
 from app.api.webhook import router as webhook_router
 from app.core.config import settings
+from app.core.errors import CodeDNAError, ExternalServiceError, SecurityValidationError
 from app.core.logging import (
     clear_trace_context,
     configure_logging,
@@ -75,3 +77,48 @@ app.include_router(health_router)
 app.include_router(webhook_router, prefix=settings.api_v1_prefix)
 app.include_router(feedback_router, prefix=settings.api_v1_prefix)
 app.include_router(dashboard_router, prefix=settings.api_v1_prefix)
+
+
+@app.exception_handler(CodeDNAError)
+async def codedna_error_handler(request: Request, exc: CodeDNAError):
+    status_code = (
+        400
+        if isinstance(exc, SecurityValidationError)
+        else 502
+        if isinstance(exc, ExternalServiceError)
+        else 500
+    )
+    request_id = getattr(request.state, "request_id", None)
+    logger.error(
+        "codedna_error_caught",
+        error_code=exc.code,
+        error_msg=exc.message,
+        request_id=request_id,
+    )
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": exc.code,
+            "message": exc.message,
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = getattr(request.state, "request_id", None)
+    logger.error(
+        "unhandled_internal_error",
+        error_msg=str(exc),
+        request_id=request_id,
+        path=request.url.path,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "INTERNAL_SERVER_ERROR",
+            "message": "An internal server error occurred.",
+            "request_id": request_id,
+        },
+    )

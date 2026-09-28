@@ -63,7 +63,11 @@ class PyGitHubClient(BaseGitHubClient):
     def _get_pygithub(self) -> Github:
         token = self.auth_provider.get_token()
         auth = Auth.Token(token)
-        return Github(auth=auth, base_url=str(settings.github_api_base_url).rstrip("/"))
+        return Github(
+            auth=auth,
+            base_url=str(settings.github_api_base_url).rstrip("/"),
+            timeout=int(settings.external_timeout_seconds),
+        )
 
     async def get_pull_request(self, owner: str, repo: str, number: int) -> PullRequestMetadata:
         try:
@@ -122,7 +126,7 @@ class PyGitHubClient(BaseGitHubClient):
             "Accept": "application/vnd.github.v3.diff",
         }
         url = f"{str(settings.github_api_base_url).rstrip('/')}/repos/{owner}/{repo}/pulls/{number}"
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=settings.external_timeout_seconds) as client:
             res = await client.get(url, headers=headers)
             if res.status_code != 200:
                 raise ExternalServiceError(

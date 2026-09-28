@@ -441,7 +441,54 @@
   - Zero secrets or mock leakage into production paths
 - **Known Non-Blocking Limitations**:
   - None
-- **Next Module**: Module 15 — Production Hardening & Security Audit
+- **Next Module**: Module 15 — Local Connections & Deployment / Production Hardening
+
+## Module 15 — Local Connections & Deployment / Production Hardening
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `docs/connection-guide.md`
+  - `scripts/verify_connections.py`
+  - `backend/app/core/config.py`
+  - `backend/app/integrations/github_client.py`
+  - `backend/app/integrations/groq_client.py`
+  - `backend/app/integrations/hindsight_client.py`
+  - `backend/app/main.py`
+  - `backend/tests/unit/test_connections.py`
+- **Commands Run**:
+  - `python scripts/verify_connections.py` (All 9 connection verification steps passed)
+  - `pytest backend/tests -v` (95 passed in 3.15s)
+  - `ruff check app tests` (All checks passed)
+  - `ruff format --check app tests` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 46 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+  - `npm run lint` (Passed, 0 warnings/errors)
+  - `npm run build` (Passed, optimized static build generated)
+- **Test Counts & Pass/Fail Status**:
+  - Unit, Security, Integration & Connection tests: 95 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+  - Build status: Frontend and Backend production builds verified
+- **Manual Review Findings**:
+  - Comprehensive `docs/connection-guide.md` created matching Section 20 of master specification covering GitHub PAT & GitHub App setups, Hindsight Cloud (with promo code `MEMHACK99`), Groq structured inference, local SQLite vs production PostgreSQL, Cloudflare/ngrok tunnels, Railway backend deployment, Vercel frontend deployment, and strict CORS configuration
+  - Created automated 9-step integration verification CLI `scripts/verify_connections.py` implementing exact verification sequence:
+    1. Backend Health (`GET /health/live`)
+    2. Database Connection (`GET /health/ready` and SQLAlchemy session)
+    3. Hindsight Connection (Bank isolation `codedna:{owner}:{repo}` and contract validation)
+    4. Groq Connection (Structured output schema compliance)
+    5. GitHub Token / App Connection (Provider contract and PR metadata)
+    6. GitHub Webhook Signature Validation (HMAC-SHA256 constant-time check)
+    7. Test PR Review Sandbox (Diff parsing, sanitization, and line bounds)
+    8. Frontend API Connection (CORS headers and overview statistics)
+    9. End-to-End Live Review Loop (Multi-scenario evaluation and feedback suppression)
+  - Explicit timeouts enforced across all external network calls: PyGitHub (15s), httpx diff retrieval (15s), AsyncGroq (30s), and Hindsight SDK `asyncio.wait_for` (15s)
+  - Strict CORS origin enforcement added to Pydantic Settings validator, strictly prohibiting wildcard `*` origins in production mode
+  - Global FastAPI exception handlers installed for `CodeDNAError` and unhandled exceptions, preventing raw stack traces or internal secrets from leaking in API responses
+  - Secret scanning confirmed 0 exposed credentials across git history and repository
+- **Known Non-Blocking Limitations**:
+  - None
+- **Next Module**: Module 16 — Demo Verification & Final Documentation Review
+
 
 
 
