@@ -237,7 +237,39 @@
   - Review outputs rendered through an immutable GitHub review template (Layer C)
 - **Known Non-Blocking Limitations**:
   - None
-- **Next Module**: Module 08 — Core Review Orchestration / Memory Loop
+
+## Module 08 — Core Review Orchestration / Memory Loop
+
+- **Status**: PASSED
+- **Date**: 2026-09-28
+- **Files Created/Changed**:
+  - `backend/app/services/publishing_service.py`
+  - `backend/app/services/learning_service.py`
+  - `backend/app/services/orchestration_service.py`
+  - `backend/app/workers/__init__.py`
+  - `backend/app/workers/tasks.py`
+  - `backend/app/api/webhook.py`
+  - `backend/tests/integration/__init__.py`
+  - `backend/tests/integration/test_orchestration_loop.py`
+- **Commands Run**:
+  - `pytest backend/tests -v` (67 passed in 1.76s)
+  - `ruff check --fix` and `ruff format` (All checks passed)
+  - `mypy backend/app` (Success: no issues found in 40 source files)
+  - `npm run typecheck` (Passed, 0 errors)
+- **Test Counts & Pass/Fail Status**:
+  - Unit, Security & Integration tests: 67 passed, 0 failed
+  - Static type checks: Backend 100% clean, Frontend 100% clean
+- **Manual Review Findings**:
+  - End-to-end orchestration connects diff extraction, Hindsight recall, Groq generation, DB persistence, GitHub publishing, and learning retention
+  - Clear stage isolation with independent error boundaries
+  - Hindsight failure cleanly degrades to stateless review without stopping review delivery
+  - Groq failure halts publishing and logs safe error code
+  - GitHub publish failure guarantees generated findings remain preserved in database audit trail
+  - FastAPI BackgroundTasks integration enables asynchronous execution from webhook intake
+- **Known Non-Blocking Limitations**:
+  - Live GitHub publishing tested against mock adapter; dedicated live sandbox validation scheduled for Module 09/15
+- **Next Module**: Module 09 — GitHub Review Publishing
+
 
 
 

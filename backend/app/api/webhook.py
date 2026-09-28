@@ -1,9 +1,16 @@
-"""GitHub Webhook Ingestion Router."""
-
 import json
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +31,7 @@ from app.schemas.github import (
     WebhookPullRequestReviewEvent,
     WebhookReviewCommentEvent,
 )
+from app.workers.tasks import run_review_orchestration_task
 
 logger = get_logger("app.api.webhook")
 router = APIRouter(prefix="/webhook", tags=["Webhook"])
@@ -37,6 +45,7 @@ router = APIRouter(prefix="/webhook", tags=["Webhook"])
 async def handle_github_webhook(
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     x_github_event: str | None = Header(None, alias="X-GitHub-Event"),
     x_github_delivery: str | None = Header(None, alias="X-GitHub-Delivery"),
     x_hub_signature_256: str | None = Header(None, alias="X-Hub-Signature-256"),
@@ -166,6 +175,16 @@ async def handle_github_webhook(
 
             await WebhookDeliveryRepo.update_status(session, delivery_id, "enqueued")
             await session.commit()
+
+            # Schedule background review task
+            background_tasks.add_task(
+                run_review_orchestration_task,
+                owner=repo_data.owner_login,
+                repo=repo_data.name,
+                pr_number=pr_data.number,
+                delivery_id=delivery_id,
+                head_sha=pr_data.head.sha,
+            )
 
             logger.info(
                 "webhook_pr_enqueued",
