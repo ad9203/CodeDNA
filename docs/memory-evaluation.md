@@ -1,7 +1,7 @@
 # CodeDNA Memory Evaluation Report
 
-**Date**: 2026-09-28  
-**Repository Tested**: `acme-corp/commerce-platform`  
+**Date**: 2026-09-28
+**Repository Tested**: `acme-corp/commerce-platform`
 **Engines**: Hindsight Persistent Memory + Groq Structured Output (`openai/gpt-oss-120b`)
 
 ---
@@ -28,7 +28,7 @@ This evaluation tests CodeDNA's core premise: **stateless AI reviewers produce g
 
 ### Scenario B: Context-Aware Review (With Hindsight Memory)
 - **Context**: Same PR #142 with Hindsight memory bank active.
-- **Recalled Memory**: 
+- **Recalled Memory**:
   > *"Team Architecture Rule: All service layer database operations must occur through repository abstractions. Direct ORM session calls in service classes are strictly forbidden."*
 - **Outcome**: CodeDNA flags a **CRITICAL** defect directly at line 19, quotes the team rule in the rationale, and suggests the exact repository call `self.payment_repo.save_transaction(record)`.
 - **Reviewer Friction**: Zero. The architectural standard is autonomously enforced before merge.

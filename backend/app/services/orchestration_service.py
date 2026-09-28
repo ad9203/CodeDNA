@@ -227,13 +227,14 @@ class OrchestrationService:
         await session.commit()
 
         logger.info(
-            "review_orchestration_completed",
+            "review_completed",
             delivery_id=delivery_id,
             repo=f"{owner}/{repo}",
             pr=pr_number,
             status=final_status,
-            findings=len(created_findings),
             duration_ms=total_duration_ms,
+            memory_recalled=len(recall_result.memories),
+            findings=len(created_findings),
         )
 
         return {
