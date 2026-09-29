@@ -160,32 +160,6 @@ Open `http://localhost:3000` to view the CodeDNA Dashboard.
 | **Frontend Production Build**| `cd frontend && npm run build` | 100% optimized static build |
 | **9-Step Connection Audit** | `python scripts/verify_connections.py` | All 9 verification steps passed |
 
----
-
-## 📊 Live Judge Demo in 3 Minutes
-
-Follow the step-by-step guide in [`docs/demo-script.md`](docs/demo-script.md):
-
-1. **0:00–0:20 (The Problem)**: Show how traditional AI reviewers miss company-specific design patterns.
-2. **0:20–0:50 (Scenario A)**: Run PR #142 in stateless mode — fails to catch direct database write in service layer.
-3. **0:50–1:20 (Memory Audit)**: Open Memory Audit panel to reveal recalled team rules from Hindsight.
-4. **1:20–2:00 (Scenario B)**: Run PR #142 with memory — catches architectural violation as CRITICAL with exact suggestion.
-5. **2:00–2:30 (Scenario C)**: Developer rejects raw SQL suggestion in PR #143; negative constraint is retained in Hindsight.
-6. **2:30–3:00 (Future PR)**: Subsequent PR #144 recalls constraint and suppresses the false positive (0 findings).
-
----
-
-## 📜 Documentation Links
-
-- [External Services Connection Guide](docs/connection-guide.md)
-- [3-Minute Live Demo Script](docs/demo-script.md)
-- [Memory Evaluation Benchmark Report](docs/memory-evaluation.md)
-- [System Architecture Blueprint](docs/architecture.md)
-- [Memory Design Specification](docs/memory-design.md)
-- [Security Threat Model](docs/threat-model.md)
-- [Module Implementation Status](MODULE_STATUS.md)
-
----
 
 ## ⚖️ License
 
