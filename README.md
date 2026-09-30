@@ -86,7 +86,6 @@ CodeDNA/
 ├── docs/
 │   ├── architecture.md     # Detailed architectural blueprint
 │   ├── connection-guide.md # Step-by-step external service setup (Section 20)
-│   ├── demo-script.md      # Minute-by-minute 3-minute judging script (Section 24)
 │   ├── memory-design.md    # Hindsight memory partitioning and retention schema
 │   ├── memory-evaluation.md# Benchmark report across Scenarios A, B, and C
 │   └── threat-model.md     # STRIDE threat model & 6-layer defense pipeline
